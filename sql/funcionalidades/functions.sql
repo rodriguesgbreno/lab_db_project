@@ -123,4 +123,32 @@ $$ LANGUAGE plpgsql;
 
 -- SELECT * FROM get_atividades_educador('CPF_EDUCADOR_EXEMPLO');
 
+-- FUNCTION para calcular total de acessos ao Cefer em um período (reservas + participações):
+CREATE OR REPLACE FUNCTION total_acessos_cefer(data_inicio DATE, data_fim DATE)
+RETURNS INT AS $$
+DECLARE
+    total_reservas INT;
+    total_participacoes INT;
+BEGIN
+    -- Contar o número de reservas no período especificado
+    SELECT COUNT(DISTINCT r.CPF_RESPONSAVEL_INTERNO)
+    INTO total_reservas
+    FROM RESERVA r
+    JOIN INSTALACAO i ON r.ID_INSTALACAO = i.ID_INSTALACAO
+    WHERE r.DATA_RESERVA BETWEEN data_inicio AND data_fim;
 
+    -- Contar o número de participações em atividades no período especificado
+    SELECT COUNT(DISTINCT p.CPF_PARTICIPANTE)
+    INTO total_participacoes
+    FROM PARTICIPACAO_ATIVIDADE p
+    JOIN ATIVIDADE a ON p.ID_ATIVIDADE = a.ID_ATIVIDADE
+    JOIN OCORRENCIA_SEMANAL o ON a.ID_ATIVIDADE = o.ID_ATIVIDADE
+    JOIN INSTALACAO i ON o.ID_INSTALACAO = i.ID_INSTALACAO
+    WHERE p.DATA_INSCRICAO BETWEEN data_inicio AND data_fim;
+
+    -- Retornar o total de acessos (reservas + participações)
+    RETURN total_reservas + total_participacoes;
+END;
+$$ LANGUAGE plpgsql;
+
+-- SELECT total_acessos_cefer('2023-07-01', '2023-08-31') AS TOTAL_ACESSOS_CEFER;
